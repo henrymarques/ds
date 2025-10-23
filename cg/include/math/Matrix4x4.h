@@ -1,6 +1,6 @@
 //[]---------------------------------------------------------------[]
 //|                                                                 |
-//| Copyright (C) 2014, 2020 Paulo Pagliosa.                        |
+//| Copyright (C) 2014, 2025 Paulo Pagliosa.                        |
 //|                                                                 |
 //| This software is provided 'as-is', without any express or       |
 //| implied warranty. In no event will the authors be held liable   |
@@ -28,7 +28,7 @@
 // Class definition for 4x4 matrix.
 //
 // Author: Paulo Pagliosa
-// Last revision: 30/05/2020
+// Last revision: 21/08/2025
 
 #ifndef __Matrix4x4_h
 #define __Matrix4x4_h
@@ -176,7 +176,7 @@ public:
   }
 
   HOST DEVICE
-  mat4& operator =(const mat3& m)
+  auto& operator =(const mat3& m)
   {
     set(m);
     return *this;
@@ -184,70 +184,70 @@ public:
 
   /// Returns a zero matrix.
   HOST DEVICE
-  static mat4 zero()
+  static auto zero()
   {
     return mat4{(real)0};
   }
 
   /// Returns an identity matrix.
   HOST DEVICE
-  static mat4 identity()
+  static auto identity()
   {
     return mat4{(real)1};
   }
 
   /// Returns a diagonal matrix d.
   HOST DEVICE
-  static mat4 diagonal(const vec4& d)
+  static auto diagonal(const vec4& d)
   {
     return mat4{d};
   }
 
   /// Returns the diagonal of this object.
   HOST DEVICE
-  vec4 diagonal() const
+  auto diagonal() const
   {
     return vec4{v0.x, v1.y, v2.z, v3.w};
   }
 
   /// Returns a reference to the j-th column of this object.
   HOST DEVICE
-  vec4& operator [](int j)
+  auto& operator [](int j)
   {
     return (&v0)[j];
   }
 
   /// Returns the j-th column of this object.
   HOST DEVICE
-  const vec4& operator [](int j) const
+  const auto& operator [](int j) const
   {
     return (&v0)[j];
   }
 
   /// Returns a reference to the element (i, j) of this object.
   HOST DEVICE
-  real& operator ()(int i, int j)
+  auto& operator ()(int i, int j)
   {
     return (*this)[j][i];
   }
 
   /// Returns the element (i, j) of this object.
   HOST DEVICE
-  const real& operator ()(int i, int j) const
+  const auto& operator ()(int i, int j) const
   {
     return (*this)[j][i];
   }
 
   /// Returns this object * s.
   HOST DEVICE
-  mat4 operator *(real s) const
+  auto operator *(real s) const
   {
     return mat4{v0 * s, v1 * s, v2 * s, v3 * s};
   }
 
   /// Returns a reference to this object *= s.
   HOST DEVICE
-  mat4& operator *=(real s)
+  auto& operator *=(real s)
   {
     v0 *= s;
     v1 *= s;
@@ -258,7 +258,7 @@ public:
 
   /// Returns this object * m.
   HOST DEVICE
-  mat4 operator *(const mat4& m) const
+  auto operator *(const mat4& m) const
   {
     const auto b0 = transform(m.v0);
     const auto b1 = transform(m.v1);
@@ -270,21 +270,21 @@ public:
 
   /// Returns a reference to this object *= m.
   HOST DEVICE
-  mat4& operator *=(const mat4& m)
+  auto& operator *=(const mat4& m)
   {
     return *this = operator *(m);
   }
 
   /// Returns this object * v.
   HOST DEVICE
-  vec4 operator *(const vec4& v) const
+  auto operator *(const vec4& v) const
   {
     return transform(v);
   }
 
   /// Returns the transposed of this object.
   HOST DEVICE
-  mat4 transposed() const
+  auto transposed() const
   {
     const vec4 b0{v0.x, v1.x, v2.x, v3.x};
     const vec4 b1{v0.y, v1.y, v2.y, v3.y};
@@ -296,7 +296,7 @@ public:
 
   /// Transposes and returns a reference to this object.
   HOST DEVICE
-  mat4& transpose()
+  auto& transpose()
   {
     return *this = transposed();
   }
@@ -349,7 +349,7 @@ public:
 
   /// Returns a position p transformed by this object.
   HOST DEVICE
-  vec4 transform(const vec4& p) const
+  auto transform(const vec4& p) const
   {
     return v0 * p.x + v1 * p.y + v2 * p.z + v3 * p.w;
   }
@@ -358,7 +358,7 @@ public:
   /// This method is slower than transform3x4, but can handle
   /// projective transformations as well.
   HOST DEVICE
-  vec3 transform(const vec3& p) const
+  auto transform(const vec3& p) const
   {
     const auto r = transform(vec4{p, 1});
     return math::isZero(r.w) ? vec3(r) : vec3(r) * ((real)1 / r.w);
@@ -368,7 +368,7 @@ public:
   /// This method is faster than transform, but it can solely
   /// handle affine 3D transformations.
   HOST DEVICE
-  vec3 transform3x4(const vec3& p) const
+  auto transform3x4(const vec3& p) const
   {
     const auto x = v0.x * p.x + v1.x * p.y + v2.x * p.z + v3.x;
     const auto y = v0.y * p.x + v1.y * p.y + v2.y * p.z + v3.y;
@@ -379,14 +379,14 @@ public:
 
   /// Returns a vector v transformed by this object.
   HOST DEVICE
-  vec3 transformVector(const vec3& v) const
+  auto transformVector(const vec3& v) const
   {
     return vec3(v0) * v.x + vec3(v1) * v.y + vec3(v2) * v.z;
   }
 
   /// Returns a translation, rotation, and scaling matrix.
   HOST DEVICE
-  static mat4 TRS(const vec3& p, const quat& q, const vec3& s)
+  static auto TRS(const vec3& p, const quat& q, const vec3& s)
   {
     mat4 m{q, p};
 
@@ -397,7 +397,7 @@ public:
   }
 
   HOST DEVICE
-  static mat4 TRS(const vec3& p, const vec3& angles, const vec3& s)
+  static auto TRS(const vec3& p, const vec3& angles, const vec3& s)
   {
     return TRS(p, quat::eulerAngles(angles), s);
   }
@@ -417,14 +417,14 @@ public:
 
   /// Returns a rotation matrix.
   HOST DEVICE
-  static mat4 rotation(const quat& q, const vec3& p)
+  static auto rotation(const quat& q, const vec3& p)
   {
     mat3 r{q};
     return mat4{r, p - r * p};
   }
 
   HOST DEVICE
-  static mat4 rotation(const vec3& axis, real angle, const vec3& p)
+  static auto rotation(const vec3& axis, real angle, const vec3& p)
   {
     return rotation(quat{angle, axis}, p);
   }
@@ -443,7 +443,7 @@ public:
 
   /// Returns an orthographic parallel projection matrix.
   HOST DEVICE
-  static mat4 ortho(real left,
+  static auto ortho(real left,
     real right,
     real bottom,
     real top,
@@ -463,7 +463,7 @@ public:
 
   /// Returns a perspective projection matrix.
   HOST DEVICE
-  static mat4 frustum(real left,
+  static auto frustum(real left,
     real right,
     real bottom,
     real top,
@@ -487,7 +487,7 @@ public:
   /// is the aspect ratio (width divided by height); zFar and zFar
   /// set up the depth clipping planes (always positive).
   HOST DEVICE
-  static mat4 perspective(real fovy, real aspect, real zNear, real zFar)
+  static auto perspective(real fovy, real aspect, real zNear, real zFar)
   {
     const auto t = tan(math::toRadians(fovy) * real(0.5));
     mat4 m{(real)0};
@@ -504,7 +504,7 @@ public:
   /// eye is the position of the camera; center is the focal point;
   /// up is the view up vector.
   HOST DEVICE
-  static mat4 lookAt(const vec3& eye, const vec3& center, const vec3& up)
+  static auto lookAt(const vec3& eye, const vec3& center, const vec3& up)
   {
     const auto n = (eye - center).versor();
     const auto u = up.cross(n).versor();
@@ -554,7 +554,7 @@ template <typename real> using Matrix4x4 = Matrix<real, 4, 4>;
 
 /// Returns s * m.
 template <typename real>
-HOST DEVICE inline Matrix4x4<real>
+HOST DEVICE inline auto
 operator *(real s, const Matrix4x4<real>& m)
 {
   return m * s;

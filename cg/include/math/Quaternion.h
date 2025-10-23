@@ -1,6 +1,6 @@
 //[]---------------------------------------------------------------[]
 //|                                                                 |
-//| Copyright (C) 2014, 2023 Paulo Pagliosa.                        |
+//| Copyright (C) 2014, 2025 Paulo Pagliosa.                        |
 //|                                                                 |
 //| This software is provided 'as-is', without any express or       |
 //| implied warranty. In no event will the authors be held liable   |
@@ -28,7 +28,7 @@
 // Class definition for quaternion.
 //
 // Author: Paulo Pagliosa
-// Last revision: 30/07/2023
+// Last revision: 21/08/2025
 
 #ifndef __Quaternion_h
 #define __Quaternion_h
@@ -391,14 +391,14 @@ public:
 
   /// Returns the squared norm of this object.
   HOST DEVICE
-  real squaredNorm() const
+  auto squaredNorm() const
   {
     return math::sqr(x) + math::sqr(y) + math::sqr(z) + math::sqr(w);
   }
 
   /// Returns the length of this object.
   HOST DEVICE
-  real length() const
+  auto length() const
   {
     return real(sqrt(squaredNorm()));
   }
@@ -531,7 +531,7 @@ Quaternion<real>::eulerAngles() const
 
 /// Returns the scalar multiplication of s and q.
 template <typename real>
-HOST DEVICE inline Quaternion<real>
+HOST DEVICE inline auto
 operator *(real s, const Quaternion<real>& q)
 {
   return q * s;

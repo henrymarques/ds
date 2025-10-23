@@ -1,6 +1,6 @@
 //[]---------------------------------------------------------------[]
 //|                                                                 |
-//| Copyright (C) 2014, 2020 Paulo Pagliosa.                        |
+//| Copyright (C) 2014, 2025 Paulo Pagliosa.                        |
 //|                                                                 |
 //| This software is provided 'as-is', without any express or       |
 //| implied warranty. In no event will the authors be held liable   |
@@ -28,7 +28,7 @@
 // Class definition for 3x3 matrix.
 //
 // Author: Paulo Pagliosa
-// Last revision: 30/05/2020
+// Last revision: 21/08/2025
 
 #ifndef __Matrix3x3_h
 #define __Matrix3x3_h
@@ -181,7 +181,7 @@ public:
   void set(const mat4& m); // implemented in Matrix4x4.h
 
   HOST DEVICE
-  mat3& operator =(const mat4& m)
+  auto& operator =(const mat4& m)
   {
     set(m);
     return *this;
@@ -189,77 +189,77 @@ public:
 
   /// Returns a zero matrix.
   HOST DEVICE
-  static mat3 zero()
+  static auto zero()
   {
     return mat3{real(0)};
   }
 
   /// Returns an identity matrix.
   HOST DEVICE
-  static mat3 identity()
+  static auto identity()
   {
     return mat3{(real)1};
   }
 
   /// Returns a diagonal matrix d.
   HOST DEVICE
-  static mat3 diagonal(const vec3& d)
+  static auto diagonal(const vec3& d)
   {
     return mat3{d};
   }
 
   /// Returns the diagonal of this object.
   HOST DEVICE
-  vec3 diagonal() const
+  auto diagonal() const
   {
     return vec3{v0.x, v1.y, v2.z};
   }
 
   /// Returns the trace of this object.
   HOST DEVICE
-  real trace() const
+  auto trace() const
   {
     return v0.x + v1.y + v2.z;
   }
 
   /// Returns a reference to the j-th column of this object.
   HOST DEVICE
-  vec3& operator [](int j)
+  auto& operator [](int j)
   {
     return (&v0)[j];
   }
 
   /// Returns the j-th column of this object.
   HOST DEVICE
-  const vec3& operator [](int j) const
+  const auto& operator [](int j) const
   {
     return (&v0)[j];
   }
 
   /// Returns a reference to the element (i, j) of this object.
   HOST DEVICE
-  real& operator ()(int i, int j)
+  auto& operator ()(int i, int j)
   {
     return (*this)[j][i];
   }
 
   /// Returns the element (i, j) of this object.
   HOST DEVICE
-  const real& operator ()(int i, int j) const
+  const auto& operator ()(int i, int j) const
   {
     return (*this)[j][i];
   }
 
   /// Returns this object * s.
   HOST DEVICE
-  mat3 operator *(real s) const
+  auto operator *(real s) const
   {
     return mat3{v0 * s, v1 * s, v2 * s};
   }
 
   /// Returns a reference to this object *= s.
   HOST DEVICE
-  mat3& operator *=(real s)
+  auto& operator *=(real s)
   {
     v0 *= s;
     v1 *= s;
@@ -269,7 +269,7 @@ public:
 
   /// Returns this object * m.
   HOST DEVICE
-  mat3 operator *(const mat3& m) const
+  auto operator *(const mat3& m) const
   {
     const auto b0 = transform(m.v0);
     const auto b1 = transform(m.v1);
@@ -280,21 +280,21 @@ public:
 
   /// Returns a reference to this object *= m.
   HOST DEVICE
-  mat3& operator *=(const mat3& m)
+  auto& operator *=(const mat3& m)
   {
     return *this = operator *(m);
   }
 
   /// Returns this object * v.
   HOST DEVICE
-  vec3 operator *(const vec3& v) const
+  auto operator *(const vec3& v) const
   {
     return transform(v);
   }
 
   /// Returns the transposed of this object.
   HOST DEVICE
-  mat3 transposed() const
+  auto transposed() const
   {
     const vec3 b0{v0.x, v1.x, v2.x};
     const vec3 b1{v0.y, v1.y, v2.y};
@@ -305,7 +305,7 @@ public:
 
   /// Transposes and returns a reference to this object.
   HOST DEVICE
-  mat3& transpose()
+  auto& transpose()
   {
     return *this = transposed();
   }
@@ -344,14 +344,14 @@ public:
 
   /// Returns v transformed by this object.
   HOST DEVICE
-  vec3 transform(const vec3& v) const
+  auto transform(const vec3& v) const
   {
     return v0 * v.x + v1 * v.y + v2 * v.z;
   }
 
   /// Returns v transformed by the transposed of this object.
   HOST DEVICE
-  vec3 transposeTransform(const vec3& v) const
+  auto transposeTransform(const vec3& v) const
   {
     return vec3{v0.dot(v), v1.dot(v), v2.dot(v)};
   }
@@ -360,7 +360,7 @@ public:
   /// This method is slower than transform3x4, but can handle
   /// projective transformations as well.
   HOST DEVICE
-  vec2 transform(const vec2& p) const
+  auto transform(const vec2& p) const
   {
     const auto r = transform(vec3{p, 1});
     return math::isZero(r.z) ? vec2(r) : vec2(r) * ((real)1 / r.z);
@@ -370,7 +370,7 @@ public:
   /// This method is faster than transform, but it can solely
   /// handle affine 2D transformations.
   HOST DEVICE
-  vec2 transform2x3(const vec2& p) const
+  auto transform2x3(const vec2& p) const
   {
     const auto x = v0.x * p.x + v1.x * p.y + v2.x;
     const auto y = v0.y * p.x + v1.y * p.y + v2.y;
@@ -380,7 +380,7 @@ public:
 
   /// Returns a vector v transformed by this object.
   HOST DEVICE
-  vec3 transformVector(const vec2& v) const
+  auto transformVector(const vec2& v) const
   {
     return vec2(v0) * v.x + vec2(v1) * v.y;
   }
@@ -468,7 +468,7 @@ template <typename real> using Matrix3x3 = Matrix<real, 3, 3>;
 
 /// Returns s * m.
 template <typename real>
-HOST DEVICE inline Matrix3x3<real>
+HOST DEVICE inline auto
 operator *(real s, const Matrix3x3<real>& m)
 {
   return m * s;
