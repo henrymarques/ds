@@ -28,7 +28,7 @@
 // Class definition for 3x3 matrix.
 //
 // Author: Paulo Pagliosa
-// Last revision: 21/08/2025
+// Last revision: 28/10/2025
 
 #ifndef __Matrix3x3_h
 #define __Matrix3x3_h
@@ -191,7 +191,7 @@ public:
   HOST DEVICE
   static auto zero()
   {
-    return mat3{real(0)};
+    return mat3{(real)0};
   }
 
   /// Returns an identity matrix.
