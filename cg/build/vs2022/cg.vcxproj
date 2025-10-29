@@ -190,6 +190,7 @@
     <ClInclude Include="..\..\include\graph\SceneObjectBuilder.h" />
     <ClInclude Include="..\..\include\graph\SceneWindow.h" />
     <ClInclude Include="..\..\include\graph\Transform.h" />
+    <ClInclude Include="..\..\include\math\Matrix2x2.h" />
     <ClInclude Include="..\..\include\math\Matrix3x3.h" />
     <ClInclude Include="..\..\include\math\Matrix4x4.h" />
     <ClInclude Include="..\..\include\math\Quaternion.h" />
