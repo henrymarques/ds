@@ -1,6 +1,6 @@
 //[]---------------------------------------------------------------[]
 //|                                                                 |
-//| Copyright (C) 2007, 2023 Paulo Pagliosa.                        |
+//| Copyright (C) 2007, 2025 Paulo Pagliosa.                        |
 //|                                                                 |
 //| This software is provided 'as-is', without any express or       |
 //| implied warranty. In no event will the authors be held liable   |
@@ -28,7 +28,7 @@
 // Class definition for scene reader.
 //
 // Author: Paulo Pagliosa
-// Last revision: 11/07/2023
+// Last revision: 01/11/2025
 
 #ifndef __SceneReader_h
 #define __SceneReader_h
@@ -160,8 +160,9 @@ protected:
     lastErrorCode
   };
 
-  virtual ComponentRef parseComponent(int, graph::SceneObject&);
+  virtual void parseWorld();
   void parsePrimitiveMaterial(Primitive&);
+  virtual ComponentRef parseComponent(int, graph::SceneObject&);
 
 private:
   SceneReader* _reader;

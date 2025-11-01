@@ -1,6 +1,6 @@
 //[]---------------------------------------------------------------[]
 //|                                                                 |
-//| Copyright (C) 2023 Paulo Pagliosa.                              |
+//| Copyright (C) 2023, 2025 Paulo Pagliosa.                        |
 //|                                                                 |
 //| This software is provided 'as-is', without any express or       |
 //| implied warranty. In no event will the authors be held liable   |
@@ -28,7 +28,7 @@
 // Class definition for scene writer.
 //
 // Author: Paulo Pagliosa
-// Last revision: 19/07/2023
+// Last revision: 01/1/2025
 
 #ifndef __SceneWriter_h
 #define __SceneWriter_h
@@ -58,7 +58,7 @@ public:
   static void registerWriteFunction(WriteFunction<C> function)
   {
     assert(function != nullptr);
-    _writeMap.add(function);
+    _writeFunctionMap.add(function);
   }
 
   using Writer::Writer;
@@ -106,11 +106,14 @@ public:
 
   void writeName(const char* label, const char* name);
 
+protected:
+  virtual void writeWorld(const Scene&);
+
 private:
-  class WriteMap
+  class WriteFunctionMap
   {
   public:
-    WriteMap();
+    WriteFunctionMap();
 
     template <typename C>
     void add(WriteFunction<C> function)
@@ -127,9 +130,9 @@ private:
   private:
     std::unordered_map<size_t, WriteFunction<>> _functions;
 
-  }; // WriteMap
+  }; // WriteFunctionMap
 
-  inline static WriteMap _writeMap;
+  inline static WriteFunctionMap _writeFunctionMap;
 
   void writeMaterial(const Material&);
   void writeEnvironment(const Scene&);

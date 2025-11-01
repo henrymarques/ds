@@ -28,7 +28,7 @@
 // Source file for generic reader base.
 //
 // Author: Paulo Pagliosa
-// Last revision: 30/08/2025
+// Last revision: 01/11/2025
 
 #include "math/Matrix3x3.h"
 #include "ReaderBase.h"
@@ -189,6 +189,8 @@ DEFINE_ERROR_MESSAGE_TABLE(Reader::Parser, AbstractParser)
     "'%c' expected")
   ERROR_MESSAGE(INDEX_OUT_OF_RANGE,
     "Index %d out of range [%d,%d]")
+  ERROR_MESSAGE(VALUE_OUT_OF_RANGE,
+    "Value %g out of range [%g,%g]")
   ERROR_MESSAGE(UNDEFINED_NAME,
     "Name '%s' is undefined")
   ERROR_MESSAGE(BAD_CAST,
@@ -402,6 +404,16 @@ Reader::Parser::matchEndOfBlock()
     else
       error(UNEXPECTED_LEXEME, _lexeme.c_str());
   advance();
+}
+
+float
+Reader::Parser::matchFloat( float min, float max)
+{
+  auto f = matchFloat();
+
+  if (f < min || f > max)
+    error(VALUE_OUT_OF_RANGE, f, min, max);
+  return f;
 }
 
 int

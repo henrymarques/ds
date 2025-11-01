@@ -1,6 +1,6 @@
 //[]---------------------------------------------------------------[]
 //|                                                                 |
-//| Copyright (C) 2007, 2023 Paulo Pagliosa.                        |
+//| Copyright (C) 2007, 2025 Paulo Pagliosa.                        |
 //|                                                                 |
 //| This software is provided 'as-is', without any express or       |
 //| implied warranty. In no event will the authors be held liable   |
@@ -28,7 +28,7 @@
 // Source file for scene reader.
 //
 // Author: Paulo Pagliosa
-// Last revision: 11/07/2023
+// Last revision: 01/11/2025
 
 #include "SceneReader.h"
 
@@ -256,6 +256,12 @@ SceneReader::Parser::parseSceneEnvironment()
 }
 
 void
+SceneReader::Parser::parseWorld()
+{
+  // do nothing
+}
+
+void
 SceneReader::Parser::parseScene()
 {
   // _SCENE
@@ -271,6 +277,7 @@ SceneReader::Parser::parseScene()
     declaration();
   if (_token == _ENVIRONMENT)
     parseSceneEnvironment();
+  parseWorld();
   parseObjectBlock(*scene->root());
   _reader->_scene = scene;
 }

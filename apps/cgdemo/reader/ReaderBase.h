@@ -1,6 +1,6 @@
 //[]---------------------------------------------------------------[]
 //|                                                                 |
-//| Copyright (C) 2007, 2023 Paulo Pagliosa.                        |
+//| Copyright (C) 2007, 2025 Paulo Pagliosa.                        |
 //|                                                                 |
 //| This software is provided 'as-is', without any express or       |
 //| implied warranty. In no event will the authors be held liable   |
@@ -28,7 +28,7 @@
 // Class definition for generic reader.
 //
 // Author: Paulo Pagliosa
-// Last revision: 06/07/2023
+// Last revision: 01/11/2025
 
 #ifndef __ReaderBase_h
 #define __ReaderBase_h
@@ -134,6 +134,7 @@ protected:
     NAME_EXPECTED,
     CHAR_EXPECTED,
     INDEX_OUT_OF_RANGE,
+    VALUE_OUT_OF_RANGE,
     UNDEFINED_NAME,
     BAD_CAST,
     ILLEGAL_OPERATION,
@@ -213,6 +214,8 @@ protected:
   {
     return matchValue<float>();
   }
+
+  float matchFloat(float, float);
 
   auto matchVec2()
   {

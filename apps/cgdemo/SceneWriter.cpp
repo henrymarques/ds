@@ -1,6 +1,6 @@
 //[]---------------------------------------------------------------[]
 //|                                                                 |
-//| Copyright (C) 2023 Paulo Pagliosa.                              |
+//| Copyright (C) 2023, 2025 Paulo Pagliosa.                        |
 //|                                                                 |
 //| This software is provided 'as-is', without any express or       |
 //| implied warranty. In no event will the authors be held liable   |
@@ -28,7 +28,7 @@
 // Source file for scene writer.
 //
 // Author: Paulo Pagliosa
-// Last revision: 21/07/2023
+// Last revision: 01/11/2025
 
 #include "graph/CameraProxy.h"
 #include "graph/LightProxy.h"
@@ -163,7 +163,7 @@ SceneWriter::writeComponent(const Component* c)
 {
   if (auto t = asTransform(c))
     writeTransform(*t);
-  else if (auto function = _writeMap.find(*c))
+  else if (auto function = _writeFunctionMap.find(*c))
     function(*this, *c);
 }
 
@@ -193,6 +193,12 @@ SceneWriter::writeMaterial(const Material& m)
 }
 
 void
+SceneWriter::writeWorld(const Scene&)
+{
+  // do nothing
+}
+
+void
 SceneWriter::write(const Scene& scene)
 {
   for (const auto& [name, m] : Assets::materials())
@@ -200,12 +206,13 @@ SceneWriter::write(const Scene& scene)
       writeMaterial(*m);
   beginBlock("scene", scene.name());
   writeEnvironment(scene);
+  writeWorld(scene);
   for (auto& object : scene.root()->children())
     writeSceneObject(&object);
   endBlock();
 }
 
-SceneWriter::WriteMap::WriteMap()
+SceneWriter::WriteFunctionMap::WriteFunctionMap()
 {
   SceneWriter::registerWriteFunction(writeCamera);
   SceneWriter::registerWriteFunction(writeLight);
