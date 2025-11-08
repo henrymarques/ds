@@ -18,3 +18,5 @@ assets/
 *.lof
 *.lot
 *.out
+*.lib
+imgui.ini
