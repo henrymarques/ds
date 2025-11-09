@@ -97,6 +97,7 @@ private:
   float _Ih;
   float _Iw;
 
+  void superScan(Image&, unsigned);
   void scan(Image& image);
   void setPixelRay(float x, float y);
   Color shoot(float x, float y);

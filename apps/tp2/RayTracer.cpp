@@ -49,6 +49,12 @@ printElapsedTime(const char* s, Stopwatch::ms_time time)
   printf("%sElapsed time: %g ms\n", s, time);
 }
 
+inline auto
+arand()
+{
+  return ((float)std::rand() / RAND_MAX / 4) - 0.125f;
+}
+
 } // end namespace
 
 
@@ -168,6 +174,33 @@ RayTracer::setPixelRay(float x, float y)
     case Camera::Parallel:
       _pixelRay.origin = _camera->position() + p;
       break;
+  }
+}
+
+void
+RayTracer::superScan(Image& image, unsigned rayAmount = 4)
+{
+  ImageBuffer scanLine{ _viewport.w, 1 };
+
+  for (auto j = 0; j < _viewport.h; j++)
+  {
+    auto y = (float)j + 0.5f;
+
+    printf("Scanning line %d of %d\r", j + 1, _viewport.h);
+    for (auto i = 0; i < _viewport.w; i++)
+    {
+      unsigned aux = rayAmount / 2;
+      
+      Color computedColor;
+      for (auto rp = 0; rp < rayAmount; rp++)
+      {
+        Color computedColor = shoot((float)i + 0.5f, y);
+      }
+
+      scanLine[i] = computedColor;
+    }
+
+    image.setData(0, j, scanLine);
   }
 }
 
@@ -322,12 +355,35 @@ RayTracer::shade(const Ray3f& ray,
     if (shadow(lightRay))
       continue;
 
+    /*
+    if (!math::isZero(m->transparency.r) || !math::isZero(m->transparency.g) || !math::isZero(m->transparency.b))
+    {
+      weight *= maxRGB(m->transparency);
+      if (weight > _minWeight && level < _maxRecursionLevel)
+      {
+        auto n1 = 1.0f;
+        if (level != 0) n1 = m->ior; // TODO: precisa usar userData pra guardar o m->ior da recursao anterior
+        auto n12 = n1 / m->ior;
+        auto c2 = std::sqrt(1 - math::sqr(n12) * (1 - math::sqr(-NL)));
+        if (std::isnan(c2))
+          continue;
+        auto T = n12 * L + (n12 * (-NL) - c2) * N;
+        auto reflectionRay = Ray3f{ P + T * rt_eps(), T };
+        auto transparencyRayColor = trace(reflectionRay, level + 1, weight);
+        color += m->transparency * transparencyRayColor;
+      }
+    }
+    */
+
     auto lc = light->lightColor(d);
 
     color += lc * m->diffuse * NL;
     if (m->shine <= 0 || (d = R.dot(L)) <= 0)
-      continue;
-    color += lc * m->spot * pow(d, m->shine);
+    {}
+    else
+    {
+      color += lc * m->spot * pow(d, m->shine);
+    }
   }
 
   // Compute specular reflection
@@ -361,7 +417,16 @@ RayTracer::shadow(const Ray3f& ray)
 //|  @return true if the ray intersects an object       |
 //[]---------------------------------------------------[]
 {
-  return _bvh->intersect(ray) ? ++_numberOfHits : false;
+  Intersection hit;
+  if (intersect(ray, hit)) {
+    // auto test = _bvh->material()->transparency;
+    // return !(maxRGB(test) != 0);
+    auto m = ((Primitive*)hit.object)->material();
+    return (math::isZero(m->transparency.r) && math::isZero(m->transparency.g) && math::isZero(m->transparency.b)) ? ++_numberOfHits : false;
+  }
+
+  return false;
+  // return _bvh->intersect(ray) ? ++_numberOfHits : false;
 }
 
 } // end namespace cg
