@@ -57,6 +57,39 @@ arand()
 
 } // end namespace
 
+inline auto
+maxRGB(const Color& c)
+{
+  return math::max(math::max(c.r, c.g), c.b);
+}
+
+Color
+RayTracer::subdivide(unsigned rayAmount, unsigned i, unsigned j, unsigned lev)
+{
+  unsigned aux = rayAmount / 2;
+
+  Color* color = new Color[4];
+  Color colorMean = Color::black;
+  for (auto ri = 0u; ri < aux; ri++)
+    for (auto rj = 0u; rj < aux; rj++)
+    {
+      color[ri + rj] = shoot(arand() + (float)i + 1.0f * ri, arand() + (float)j + 1.0f * rj);
+      colorMean += color[ri + rj];
+    }
+
+  colorMean *= (1.0f / 4);
+  for (auto c = 0u; c < rayAmount; c++)
+  {
+    auto d = maxRGB(color[c] - colorMean);
+    if (d < 0.3f && lev < 4)
+    {
+      colorMean = subdivide(4, i / 4.0f, j / 4.0f, lev + 1);
+    }
+  }
+  delete[] color;
+
+  return colorMean;
+}
 
 /////////////////////////////////////////////////////////////////////
 //
@@ -146,7 +179,7 @@ RayTracer::renderImage(Image& image)
   _pixelRay.tMax = B;
   _pixelRay.set(_camera->position(), -_vrc.n);
   _numberOfRays = _numberOfHits = 0;
-  scan(image);
+  superScan(image, 4);
 
   auto et = timer.time();
 
@@ -178,26 +211,18 @@ RayTracer::setPixelRay(float x, float y)
 }
 
 void
-RayTracer::superScan(Image& image, unsigned rayAmount = 4)
+RayTracer::superScan(Image& image, unsigned rayAmount = 4u)
 {
   ImageBuffer scanLine{ _viewport.w, 1 };
 
-  for (auto j = 0; j < _viewport.h; j++)
+  for (auto j = 0u; j < _viewport.h; j++)
   {
-    auto y = (float)j + 0.5f;
-
     printf("Scanning line %d of %d\r", j + 1, _viewport.h);
-    for (auto i = 0; i < _viewport.w; i++)
+    for (auto i = 0u; i < _viewport.w; i++)
     {
-      unsigned aux = rayAmount / 2;
-      
-      Color computedColor;
-      for (auto rp = 0; rp < rayAmount; rp++)
-      {
-        Color computedColor = shoot((float)i + 0.5f, y);
-      }
+      Color color = subdivide(rayAmount, i, j, 0);
 
-      scanLine[i] = computedColor;
+      scanLine[i] = color;
     }
 
     image.setData(0, j, scanLine);
@@ -283,12 +308,6 @@ RayTracer::intersect(const Ray3f& ray, Intersection& hit)
   hit.object = nullptr;
   hit.distance = ray.tMax;
   return _bvh->intersect(ray, hit) ? ++_numberOfHits : false;
-}
-
-inline auto
-maxRGB(const Color& c)
-{
-  return math::max(math::max(c.r, c.g), c.b);
 }
 
 Color
