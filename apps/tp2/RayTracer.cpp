@@ -64,26 +64,28 @@ maxRGB(const Color& c)
 }
 
 Color
-RayTracer::subdivide(unsigned rayAmount, unsigned i, unsigned j, unsigned lev)
+RayTracer::subdivide(unsigned rayAmount, unsigned i, unsigned j, unsigned subivisionLevel)
 {
-  unsigned aux = rayAmount / 2;
-
+  assert(rayAmount == 4);
   Color* color = new Color[4];
   Color colorMean = Color::black;
-  for (auto ri = 0u; ri < aux; ri++)
-    for (auto rj = 0u; rj < aux; rj++)
+  for (auto ri = 0u, k = 0u; ri < rayAmount / 2; ri++)
+  {
+    for (auto rj = 0u; rj < rayAmount / 2; rj++)
     {
-      color[ri + rj] = shoot(arand() + (float)i + 1.0f * ri, arand() + (float)j + 1.0f * rj);
-      colorMean += color[ri + rj];
+      color[k] = shoot(arand() + (float)i + 1.0f * (ri), arand() + (float)j + 1.0f * rj);
+      colorMean += color[k];
+      k++;
     }
+  }
 
   colorMean *= (1.0f / 4);
-  for (auto c = 0u; c < rayAmount; c++)
+  for (auto k = 0u; k < rayAmount; k++)
   {
-    auto d = maxRGB(color[c] - colorMean);
-    if (d < 0.3f && lev < 4)
+    auto d = math::abs(maxRGB(color[k] - colorMean));
+    if (d > 0.15f && subivisionLevel < 4)
     {
-      colorMean = subdivide(4, i / 4.0f, j / 4.0f, lev + 1);
+      colorMean = subdivide(rayAmount, i / 2.0f, j / 2.0f, subivisionLevel + 1);
     }
   }
   delete[] color;
@@ -179,7 +181,7 @@ RayTracer::renderImage(Image& image)
   _pixelRay.tMax = B;
   _pixelRay.set(_camera->position(), -_vrc.n);
   _numberOfRays = _numberOfHits = 0;
-  superScan(image, 4);
+  superScan(image);
 
   auto et = timer.time();
 
@@ -211,7 +213,7 @@ RayTracer::setPixelRay(float x, float y)
 }
 
 void
-RayTracer::superScan(Image& image, unsigned rayAmount = 4u)
+RayTracer::superScan(Image& image, unsigned rayAmount)
 {
   ImageBuffer scanLine{ _viewport.w, 1 };
 
@@ -339,9 +341,10 @@ RayTracer::shade(const Ray3f& ray,
   // reflection vector
   auto R = V - (2 * NV) * N; 
 
-  // Start with ambient lighting
   auto m = primitive->material();
+  // Start with ambient lighting
   auto color = _scene->ambientLight * m->ambient;
+  // Intersection point 
   auto P = ray(hit.distance);
 
   // Compute direct lighting
@@ -374,35 +377,12 @@ RayTracer::shade(const Ray3f& ray,
     if (shadow(lightRay))
       continue;
 
-    /*
-    if (!math::isZero(m->transparency.r) || !math::isZero(m->transparency.g) || !math::isZero(m->transparency.b))
-    {
-      weight *= maxRGB(m->transparency);
-      if (weight > _minWeight && level < _maxRecursionLevel)
-      {
-        auto n1 = 1.0f;
-        if (level != 0) n1 = m->ior; // TODO: precisa usar userData pra guardar o m->ior da recursao anterior
-        auto n12 = n1 / m->ior;
-        auto c2 = std::sqrt(1 - math::sqr(n12) * (1 - math::sqr(-NL)));
-        if (std::isnan(c2))
-          continue;
-        auto T = n12 * L + (n12 * (-NL) - c2) * N;
-        auto reflectionRay = Ray3f{ P + T * rt_eps(), T };
-        auto transparencyRayColor = trace(reflectionRay, level + 1, weight);
-        color += m->transparency * transparencyRayColor;
-      }
-    }
-    */
-
     auto lc = light->lightColor(d);
 
     color += lc * m->diffuse * NL;
     if (m->shine <= 0 || (d = R.dot(L)) <= 0)
-    {}
-    else
-    {
-      color += lc * m->spot * pow(d, m->shine);
-    }
+      continue;
+    color += lc * m->spot * pow(d, m->shine);
   }
 
   // Compute specular reflection
@@ -415,6 +395,26 @@ RayTracer::shade(const Ray3f& ray,
       color += m->specular * trace(reflectionRay, level + 1, weight);
     }
   }
+
+  // Compute refraction
+  if (m->transparency != Color::black)
+  {
+    weight *= maxRGB(m->transparency);
+    if (weight > _minWeight && level < _maxRecursionLevel)
+    {
+      auto n1 = 1.0f;
+      // if (level != 0) n1 = *reinterpret_cast<float*>(hit.userData);
+      auto n12 = n1 / m->ior;
+      auto c1 = (-V).dot(N);
+      auto c2 = 1 - (math::sqr(n12) * (1 - c1*c1));
+      if (!math::isNegative(c2)) {
+        auto T = n12 * V + (n12 * c1 - std::sqrt(c2)) * N;
+        auto refractionRay = Ray3f{ P + T * rt_eps(), T };
+        color += m->transparency * trace(refractionRay, level + 1, weight);
+      }
+    }
+  }
+
   return color;
 }
 
@@ -436,16 +436,18 @@ RayTracer::shadow(const Ray3f& ray)
 //|  @return true if the ray intersects an object       |
 //[]---------------------------------------------------[]
 {
+  /*
   Intersection hit;
-  if (intersect(ray, hit)) {
+  if (_bvh->intersect(ray, hit)) {
     // auto test = _bvh->material()->transparency;
     // return !(maxRGB(test) != 0);
     auto m = ((Primitive*)hit.object)->material();
-    return (math::isZero(m->transparency.r) && math::isZero(m->transparency.g) && math::isZero(m->transparency.b)) ? ++_numberOfHits : false;
+    return (m->transparency == Color::black) ? ++_numberOfHits : false;
   }
 
   return false;
-  // return _bvh->intersect(ray) ? ++_numberOfHits : false;
+  */
+  return _bvh->intersect(ray) ? ++_numberOfHits : false;
 }
 
 } // end namespace cg

@@ -98,7 +98,7 @@ private:
   float _Iw;
 
   Color subdivide(unsigned, unsigned, unsigned, unsigned);
-  void superScan(Image&, unsigned);
+  void superScan(Image&, unsigned rayAmount = 4u);
   void scan(Image& image);
   void setPixelRay(float x, float y);
   Color shoot(float x, float y);
