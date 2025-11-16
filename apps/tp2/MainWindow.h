@@ -68,6 +68,8 @@ private:
   Reference<RayTracer> _rayTracer;
   Reference<GLImage> _image;
   int _maxRecursionLevel{6};
+  float _minColorThreshold{0.3};
+  int _maxSubdivisionLevel{3};
   float _minWeight{RayTracer::minMinWeight};
 
   static MeshMap _defaultMeshes;

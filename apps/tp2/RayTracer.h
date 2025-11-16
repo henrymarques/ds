@@ -38,6 +38,8 @@
 #include "graphics/PrimitiveBVH.h"
 #include "graphics/Renderer.h"
 
+#include <stack>
+
 namespace cg
 { // begin namespace cg
 
@@ -53,6 +55,16 @@ public:
   static constexpr auto maxMaxRecursionLevel = uint32_t(20);
 
   RayTracer(SceneBase&, Camera&);
+
+  auto colorThreshold() const
+  {
+    return _colorThreshold;
+  }
+
+  void setColorThreshold(float d)
+  {
+    _colorThreshold = math::min(d, 0.99f);
+  }
 
   auto minWeight() const
   {
@@ -74,6 +86,16 @@ public:
     _maxRecursionLevel = math::min(rl, maxMaxRecursionLevel);
   }
 
+  auto maxSubdivisionLevel() const
+  {
+    return _maxSubdivisionLevel;
+  }
+
+  void setMaxSubdivisionLevel(uint32_t rl)
+  {
+    _maxSubdivisionLevel = math::min(rl, 4u);
+  }
+
   void update() override;
   void render() override;
   virtual void renderImage(Image&);
@@ -88,6 +110,8 @@ private:
 
   } _vrc;
   float _minWeight;
+  float _colorThreshold;
+  uint32_t _maxSubdivisionLevel;
   uint32_t _maxRecursionLevel;
   uint64_t _numberOfRays;
   uint64_t _numberOfHits;
@@ -97,8 +121,16 @@ private:
   float _Ih;
   float _Iw;
 
-  Color subdivide(unsigned, unsigned, unsigned, unsigned);
-  void superScan(Image&, unsigned rayAmount = 4u);
+  std::stack<float> _iorStack;
+  struct RayCache
+  {
+    Color color;
+    bool valid;
+  };
+  RayCache* _rayCache;
+
+  Color subdivide(unsigned, unsigned, unsigned);
+  void superScan(Image&);
   void scan(Image& image);
   void setPixelRay(float x, float y);
   Color shoot(float x, float y);

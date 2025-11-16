@@ -64,30 +64,30 @@ maxRGB(const Color& c)
 }
 
 Color
-RayTracer::subdivide(unsigned rayAmount, unsigned i, unsigned j, unsigned subivisionLevel)
+RayTracer::subdivide(unsigned i, unsigned j, unsigned subivisionLevel)
 {
-  assert(rayAmount == 4);
+  constexpr auto rayAmount{4u};
+
   Color* color = new Color[4];
   Color colorMean = Color::black;
   for (auto ri = 0u, k = 0u; ri < rayAmount / 2; ri++)
-  {
     for (auto rj = 0u; rj < rayAmount / 2; rj++)
     {
       color[k] = shoot(arand() + (float)i + 1.0f * (ri), arand() + (float)j + 1.0f * rj);
       colorMean += color[k];
       k++;
     }
-  }
 
   colorMean *= (1.0f / 4);
-  for (auto k = 0u; k < rayAmount; k++)
-  {
-    auto d = math::abs(maxRGB(color[k] - colorMean));
-    if (d > 0.15f && subivisionLevel < 4)
+  for (auto ri = 0u, k = 0u; ri < rayAmount / 2; ri++)
+    for (auto rj = 0u; rj < rayAmount / 2; rj++)
     {
-      colorMean = subdivide(rayAmount, i / 2.0f, j / 2.0f, subivisionLevel + 1);
+      auto d = math::abs(maxRGB(color[k] - colorMean));
+      if (d > _colorThreshold && subivisionLevel < _maxSubdivisionLevel)
+        colorMean = subdivide((i + ri) / 2.0f, (j + rj) / 2.0f, subivisionLevel + 1);
+      k++;
     }
-  }
+  
   delete[] color;
 
   return colorMean;
@@ -100,7 +100,9 @@ RayTracer::subdivide(unsigned rayAmount, unsigned i, unsigned j, unsigned subivi
 RayTracer::RayTracer(SceneBase& scene, Camera& camera):
   Renderer{scene, camera},
   _maxRecursionLevel{6},
-  _minWeight{minMinWeight}
+  _minWeight{minMinWeight},
+  _colorThreshold{0.3f},
+  _maxSubdivisionLevel{3u}
 {
   // do nothing
 }
@@ -167,6 +169,8 @@ RayTracer::renderImage(Image& image)
       _Vh = (_Vw = wh) * h * _Iw;
   }
 
+  _rayCache = new RayCache[_viewport.w * 4 * 4];
+
   // init pixel ray
   float F, B;
 
@@ -181,7 +185,8 @@ RayTracer::renderImage(Image& image)
   _pixelRay.tMax = B;
   _pixelRay.set(_camera->position(), -_vrc.n);
   _numberOfRays = _numberOfHits = 0;
-  superScan(image);
+  _iorStack.push(1.0f);
+  scan(image);
 
   auto et = timer.time();
 
@@ -213,8 +218,10 @@ RayTracer::setPixelRay(float x, float y)
 }
 
 void
-RayTracer::superScan(Image& image, unsigned rayAmount)
+RayTracer::superScan(Image& image)
 {
+  constexpr auto rayAmount{ 4u };
+
   ImageBuffer scanLine{ _viewport.w, 1 };
 
   for (auto j = 0u; j < _viewport.h; j++)
@@ -222,7 +229,7 @@ RayTracer::superScan(Image& image, unsigned rayAmount)
     printf("Scanning line %d of %d\r", j + 1, _viewport.h);
     for (auto i = 0u; i < _viewport.w; i++)
     {
-      Color color = subdivide(rayAmount, i, j, 0);
+      Color color = subdivide(i, j, 0);
 
       scanLine[i] = color;
     }
@@ -402,15 +409,16 @@ RayTracer::shade(const Ray3f& ray,
     weight *= maxRGB(m->transparency);
     if (weight > _minWeight && level < _maxRecursionLevel)
     {
-      auto n1 = 1.0f;
-      // if (level != 0) n1 = *reinterpret_cast<float*>(hit.userData);
+      auto n1 = _iorStack.top();
       auto n12 = n1 / m->ior;
       auto c1 = (-V).dot(N);
       auto c2 = 1 - (math::sqr(n12) * (1 - c1*c1));
       if (!math::isNegative(c2)) {
-        auto T = n12 * V + (n12 * c1 - std::sqrt(c2)) * N;
-        auto refractionRay = Ray3f{ P + T * rt_eps(), T };
+        _iorStack.push(m->ior);
+        auto T = (n12 * V + (n12 * c1 - std::sqrt(c2)) * N).versor();
+        auto refractionRay = Ray3f{ P + T * rt_eps(), T};
         color += m->transparency * trace(refractionRay, level + 1, weight);
+        _iorStack.pop();
       }
     }
   }
@@ -436,18 +444,13 @@ RayTracer::shadow(const Ray3f& ray)
 //|  @return true if the ray intersects an object       |
 //[]---------------------------------------------------[]
 {
-  /*
   Intersection hit;
   if (_bvh->intersect(ray, hit)) {
-    // auto test = _bvh->material()->transparency;
-    // return !(maxRGB(test) != 0);
     auto m = ((Primitive*)hit.object)->material();
     return (m->transparency == Color::black) ? ++_numberOfHits : false;
   }
 
   return false;
-  */
-  return _bvh->intersect(ray) ? ++_numberOfHits : false;
 }
 
 } // end namespace cg
