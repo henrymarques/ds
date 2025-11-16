@@ -63,36 +63,6 @@ maxRGB(const Color& c)
   return math::max(math::max(c.r, c.g), c.b);
 }
 
-Color
-RayTracer::subdivide(unsigned i, unsigned j, unsigned subivisionLevel)
-{
-  constexpr auto rayAmount{4u};
-
-  Color* color = new Color[4];
-  Color colorMean = Color::black;
-  for (auto ri = 0u, k = 0u; ri < rayAmount / 2; ri++)
-    for (auto rj = 0u; rj < rayAmount / 2; rj++)
-    {
-      color[k] = shoot(arand() + (float)i + 1.0f * (ri), arand() + (float)j + 1.0f * rj);
-      colorMean += color[k];
-      k++;
-    }
-
-  colorMean *= (1.0f / 4);
-  for (auto ri = 0u, k = 0u; ri < rayAmount / 2; ri++)
-    for (auto rj = 0u; rj < rayAmount / 2; rj++)
-    {
-      auto d = math::abs(maxRGB(color[k] - colorMean));
-      if (d > _colorThreshold && subivisionLevel < _maxSubdivisionLevel)
-        colorMean = subdivide((i + ri) / 2.0f, (j + rj) / 2.0f, subivisionLevel + 1);
-      k++;
-    }
-  
-  delete[] color;
-
-  return colorMean;
-}
-
 /////////////////////////////////////////////////////////////////////
 //
 // RayTracer implementation
@@ -252,6 +222,36 @@ RayTracer::scan(Image& image)
       scanLine[i] = shoot((float)i + 0.5f, y);
     image.setData(0, j, scanLine);
   }
+}
+
+Color
+RayTracer::subdivide(unsigned i, unsigned j, unsigned subivisionLevel)
+{
+  constexpr auto rayAmount{ 4u };
+
+  Color* color = new Color[4];
+  Color colorMean = Color::black;
+  for (auto ri = 0u, k = 0u; ri < rayAmount / 2; ri++)
+    for (auto rj = 0u; rj < rayAmount / 2; rj++)
+    {
+      color[k] = shoot(arand() + (float)i + 1.0f * (ri), arand() + (float)j + 1.0f * rj);
+      colorMean += color[k];
+      k++;
+    }
+
+  colorMean *= (1.0f / 4);
+  for (auto ri = 0u, k = 0u; ri < rayAmount / 2; ri++)
+    for (auto rj = 0u; rj < rayAmount / 2; rj++)
+    {
+      auto d = math::abs(maxRGB(color[k] - colorMean));
+      if (d > _colorThreshold && subivisionLevel < _maxSubdivisionLevel)
+        colorMean = subdivide((i + ri) / 2.0f, (j + rj) / 2.0f, subivisionLevel + 1);
+      k++;
+    }
+
+  delete[] color;
+
+  return colorMean;
 }
 
 Color
