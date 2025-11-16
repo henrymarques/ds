@@ -34,6 +34,7 @@
 #include "utils/Stopwatch.h"
 #include "RayTracer.h"
 #include <iostream>
+#include <cmath>
 
 using namespace std;
 
@@ -156,7 +157,7 @@ RayTracer::renderImage(Image& image)
   _pixelRay.set(_camera->position(), -_vrc.n);
   _numberOfRays = _numberOfHits = 0;
   _iorStack.push(1.0f);
-  scan(image);
+  superScan(image);
 
   auto et = timer.time();
 
@@ -200,7 +201,6 @@ RayTracer::superScan(Image& image)
     for (auto i = 0u; i < _viewport.w; i++)
     {
       Color color = subdivide(i, j, 0);
-
       scanLine[i] = color;
     }
 
@@ -225,16 +225,17 @@ RayTracer::scan(Image& image)
 }
 
 Color
-RayTracer::subdivide(unsigned i, unsigned j, unsigned subivisionLevel)
+RayTracer::subdivide(unsigned i, unsigned j, unsigned subdivisionLevel)
 {
   constexpr auto rayAmount{ 4u };
+  auto offset = 1.0f / (float)(std::pow(2, subdivisionLevel));
 
   Color* color = new Color[4];
   Color colorMean = Color::black;
   for (auto ri = 0u, k = 0u; ri < rayAmount / 2; ri++)
     for (auto rj = 0u; rj < rayAmount / 2; rj++)
     {
-      color[k] = shoot(arand() + (float)i + 1.0f * (ri), arand() + (float)j + 1.0f * rj);
+      color[k] = shoot((float)i + offset * ri, (float)j + offset * rj);
       colorMean += color[k];
       k++;
     }
@@ -244,8 +245,8 @@ RayTracer::subdivide(unsigned i, unsigned j, unsigned subivisionLevel)
     for (auto rj = 0u; rj < rayAmount / 2; rj++)
     {
       auto d = math::abs(maxRGB(color[k] - colorMean));
-      if (d > _colorThreshold && subivisionLevel < _maxSubdivisionLevel)
-        colorMean = subdivide((i + ri) / 2.0f, (j + rj) / 2.0f, subivisionLevel + 1);
+      if (d > _colorThreshold && subdivisionLevel < _maxSubdivisionLevel)
+        colorMean = subdivide((i + ri) / 2.0f, (j + rj) / 2.0f, subdivisionLevel + 1);
       k++;
     }
 
