@@ -158,6 +158,7 @@ RayTracer::renderImage(Image& image)
   _numberOfRays = _numberOfHits = 0;
   _iorStack.push(1.0f);
   superScan(image);
+  delete[] _rayCache;
 
   auto et = timer.time();
 
@@ -200,7 +201,7 @@ RayTracer::superScan(Image& image)
     printf("Scanning line %d of %d\r", j + 1, _viewport.h);
     for (auto i = 0u; i < _viewport.w; i++)
     {
-      Color color = subdivide(i, j, 0);
+      Color color = subdivide(i + arand(), j + arand(), 0);
       scanLine[i] = color;
     }
 
@@ -246,7 +247,10 @@ RayTracer::subdivide(unsigned i, unsigned j, unsigned subdivisionLevel)
     {
       auto d = math::abs(maxRGB(color[k] - colorMean));
       if (d > _colorThreshold && subdivisionLevel < _maxSubdivisionLevel)
-        colorMean = subdivide((i + ri) / 2.0f, (j + rj) / 2.0f, subdivisionLevel + 1);
+      {
+        delete[] color;
+        return subdivide(i, j, subdivisionLevel + 1);
+      }
       k++;
     }
 
