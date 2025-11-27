@@ -140,7 +140,7 @@ RayTracer::renderImage(Image& image)
       _Vh = (_Vw = wh) * h * _Iw;
   }
 
-  _rayCache = new RayCache[_viewport.w * 4 * 4];
+  _rayCache = new RayCache[_viewport.w * 4];
 
   // init pixel ray
   float F, B;
@@ -236,7 +236,17 @@ RayTracer::subdivide(unsigned i, unsigned j, unsigned subdivisionLevel)
   for (auto ri = 0u, k = 0u; ri < rayAmount / 2; ri++)
     for (auto rj = 0u; rj < rayAmount / 2; rj++)
     {
-      color[k] = shoot((float)i + offset * ri, (float)j + offset * rj);
+      auto pos = (int)(i + (ri * offset) + (rj * offset));
+      if (_rayCache[pos].valid)
+      {
+        color[k] = _rayCache[pos].color;
+      }
+      else
+      {
+        color[k] = shoot((float)i + offset * ri, (float)j + offset * rj);
+        _rayCache[pos].color = color[k];
+        _rayCache[pos].valid = true;
+      }
       colorMean += color[k];
       k++;
     }
@@ -442,17 +452,20 @@ RayTracer::background() const
 }
 
 bool
-RayTracer::shadow(const Ray3f& ray)
+RayTracer::shadow(Ray3f ray)
 //[]---------------------------------------------------[]
 //|  Verifiy if ray is a shadow ray                     |
 //|  @param the ray (input)                             |
 //|  @return true if the ray intersects an object       |
 //[]---------------------------------------------------[]
 {
-  Intersection hit;
-  if (_bvh->intersect(ray, hit)) {
+  for(Intersection hit; _bvh->intersect(ray, hit);)
+  {
     auto m = ((Primitive*)hit.object)->material();
-    return (m->transparency == Color::black) ? ++_numberOfHits : false;
+    if (m->transparency == Color::black) return ++_numberOfHits;
+
+    ray.origin = ray(hit.distance + rt_eps());
+    ray.tMax -= hit.distance;
   }
 
   return false;

@@ -125,7 +125,7 @@ private:
   struct RayCache
   {
     Color color;
-    bool valid;
+    bool valid{ false };
   };
   RayCache* _rayCache;
 
@@ -137,7 +137,7 @@ private:
   bool intersect(const Ray3f&, Intersection&);
   Color trace(const Ray3f& ray, uint32_t level, float weight);
   Color shade(const Ray3f&, Intersection&, uint32_t, float);
-  bool shadow(const Ray3f&);
+  bool shadow(Ray3f);
   Color background() const;
 
   vec3f imageToWindow(float x, float y) const
