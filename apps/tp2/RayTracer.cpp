@@ -156,8 +156,7 @@ RayTracer::renderImage(Image& image)
   _pixelRay.tMax = B;
   _pixelRay.set(_camera->position(), -_vrc.n);
   _numberOfRays = _numberOfHits = 0;
-  _iorStack.push(1.0f);
-  superScan(image);
+  scan(image);
   delete[] _rayCache;
 
   auto et = timer.time();
@@ -237,16 +236,7 @@ RayTracer::subdivide(unsigned i, unsigned j, unsigned subdivisionLevel)
     for (auto rj = 0u; rj < rayAmount / 2; rj++)
     {
       auto pos = (int)(i + (ri * offset) + (rj * offset));
-      if (_rayCache[pos].valid)
-      {
-        color[k] = _rayCache[pos].color;
-      }
-      else
-      {
-        color[k] = shoot((float)i + offset * ri, (float)j + offset * rj);
-        _rayCache[pos].color = color[k];
-        _rayCache[pos].valid = true;
-      }
+      color[k] = shoot((float)i + offset * ri, (float)j + offset * rj);
       colorMean += color[k];
       k++;
     }
@@ -282,7 +272,7 @@ RayTracer::shoot(float x, float y)
   setPixelRay(x, y);
 
   // trace pixel ray
-  Color color = trace(_pixelRay, 0, 1);
+  Color color = trace(_pixelRay, 0, 1, 1.0f);
 
   // adjust RGB color
   if (color.r > 1.0f)
@@ -296,7 +286,7 @@ RayTracer::shoot(float x, float y)
 }
 
 Color
-RayTracer::trace(const Ray3f& ray, uint32_t level, float weight)
+RayTracer::trace(const Ray3f& ray, uint32_t level, float weight, float ior)
 //[]---------------------------------------------------[]
 //|  Trace a ray                                        |
 //|  @param the ray                                     |
@@ -311,7 +301,7 @@ RayTracer::trace(const Ray3f& ray, uint32_t level, float weight)
 
   Intersection hit;
 
-  return intersect(ray, hit) ? shade(ray, hit, level, weight) : background();
+  return intersect(ray, hit) ? shade(ray, hit, level, weight, ior) : background();
 }
 
 inline constexpr auto
@@ -338,7 +328,8 @@ Color
 RayTracer::shade(const Ray3f& ray,
   Intersection& hit,
   uint32_t level,
-  float weight)
+  float weight,
+  float ior)
 //[]---------------------------------------------------[]
 //|  Shade a point P                                    |
 //|  @param the ray (input)                             |
@@ -414,7 +405,7 @@ RayTracer::shade(const Ray3f& ray,
     if (weight > _minWeight && level < _maxRecursionLevel)
     {
       auto reflectionRay = Ray3f{P + R * rt_eps(), R};
-      color += m->specular * trace(reflectionRay, level + 1, weight);
+      color += m->specular * trace(reflectionRay, level + 1, weight, ior);
     }
   }
 
@@ -424,16 +415,13 @@ RayTracer::shade(const Ray3f& ray,
     weight *= maxRGB(m->transparency);
     if (weight > _minWeight && level < _maxRecursionLevel)
     {
-      auto n1 = _iorStack.top();
-      auto n12 = n1 / m->ior;
+      auto n12 = ior / m->ior;
       auto c1 = (-V).dot(N);
       auto c2 = 1 - (math::sqr(n12) * (1 - c1*c1));
       if (!math::isNegative(c2)) {
-        _iorStack.push(m->ior);
         auto T = (n12 * V + (n12 * c1 - std::sqrt(c2)) * N).versor();
         auto refractionRay = Ray3f{ P + T * rt_eps(), T};
-        color += m->transparency * trace(refractionRay, level + 1, weight);
-        _iorStack.pop();
+        color += m->transparency * trace(refractionRay, level + 1, weight, m->ior);
       }
     }
   }

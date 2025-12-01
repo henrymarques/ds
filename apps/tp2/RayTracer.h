@@ -121,7 +121,6 @@ private:
   float _Ih;
   float _Iw;
 
-  std::stack<float> _iorStack;
   struct RayCache
   {
     Color color;
@@ -135,8 +134,8 @@ private:
   void setPixelRay(float x, float y);
   Color shoot(float x, float y);
   bool intersect(const Ray3f&, Intersection&);
-  Color trace(const Ray3f& ray, uint32_t level, float weight);
-  Color shade(const Ray3f&, Intersection&, uint32_t, float);
+  Color trace(const Ray3f& ray, uint32_t level, float weight, float ior);
+  Color shade(const Ray3f&, Intersection&, uint32_t, float, float);
   bool shadow(Ray3f);
   Color background() const;
 
