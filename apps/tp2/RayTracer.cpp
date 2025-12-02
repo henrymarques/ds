@@ -192,14 +192,6 @@ RayTracer::superScan(Image& image)
 
   ImageBuffer scanLine{ _viewport.w, 1 };
 
-  for (auto j = 0; j < length; j++)
-  {
-    for (auto i = 0; i < length; i++)
-    {
-      window[j][i].baked = 0;
-    }
-  }
-
   for (auto j = 0; j < _viewport.h; j++)
   {
     printf("Scanning line %d of %d\r", j + 1, _viewport.h);
@@ -213,9 +205,13 @@ RayTracer::superScan(Image& image)
         if (buffer[(i * (length - 1)) + k].baked)
           window[0][k] = buffer[(i * (length - 1)) + k];
 
-      Color color = subdivide(i, j, (float)i, (float)j, 0);
-      scanLine[i] = color;
+      for (auto k = 1; k < length; k++)
+        for (auto l = 1; l < length; l++)
+          window[k][l].baked = 0;
 
+      Color color = subdivide(0, 0, (float)i, (float)j, _maxSteps);
+      scanLine[i] = color;
+      
       for (auto k = 0; k < length; k++)
         if (window[length - 1][k].baked)
           buffer[(i * (length - 1)) + k] = window[length - 1][k];
@@ -227,6 +223,8 @@ RayTracer::superScan(Image& image)
 
     image.setData(0, j, scanLine);
   }
+
+  delete[] buffer;
 }
 
 void
@@ -249,29 +247,26 @@ Color
 RayTracer::subdivide(unsigned i, unsigned j, float x, float y, unsigned steps)
 {
   // auto steps = 1 << subdivisionLevel;
-  auto offset = 1.0f / steps;
+  auto offset = steps / (float)_maxSteps;
 
   Color color[4];
   Color colorMean = Color::black;
 
+  // int c = 0;
   for (int w = 0, c = 0; w < 2; w++)
   {
     for (int z = 0; z < 2; z++)
     {
-      auto buf = window[i + (steps * w)][j + (steps * z)];
+      auto& buf = window[i + (steps * w)][j + (steps * z)];
       if (buf.baked)
       {
-        color[c].r = buf.p.r;
-        color[c].g = buf.p.g;
-        color[c].b = buf.p.b;
+        color[c].setRGB(buf.p.r, buf.p.g, buf.p.b);
       }
       else
       {
         color[c] = shoot(x + (offset * w), y + (offset * z));
+        buf.p.set(color[c]);
         buf.baked = 1;
-        buf.p.r = color[c].r;
-        buf.p.g = color[c].g;
-        buf.p.b = color[c].b;
       }
 
       c++;
@@ -284,11 +279,13 @@ RayTracer::subdivide(unsigned i, unsigned j, float x, float y, unsigned steps)
 
   for (auto k = 0; k < 4; k++) {
     auto d = math::abs(maxRGB(color[k] - colorMean));
-    if (d > _colorThreshold && steps < _maxSteps)
+    if (d > _colorThreshold && steps > 1)
     {
-      colorMean = Color::black;
       steps >>= 1;
 
+      // return subdivide(i, j, x, y, steps);
+
+      colorMean = Color::black;
       colorMean += subdivide(i, j, x, y, steps);
       colorMean += subdivide(i + steps, j, x, y, steps);
       colorMean += subdivide(i, j + steps, x, y, steps);
