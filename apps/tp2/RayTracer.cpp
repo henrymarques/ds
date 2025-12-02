@@ -246,13 +246,11 @@ RayTracer::scan(Image& image)
 Color
 RayTracer::subdivide(unsigned i, unsigned j, float x, float y, unsigned steps)
 {
-  // auto steps = 1 << subdivisionLevel;
   auto offset = steps / (float)_maxSteps;
 
   Color color[4];
   Color colorMean = Color::black;
 
-  // int c = 0;
   for (int w = 0, c = 0; w < 2; w++)
   {
     for (int z = 0; z < 2; z++)
@@ -282,8 +280,6 @@ RayTracer::subdivide(unsigned i, unsigned j, float x, float y, unsigned steps)
     if (d > _colorThreshold && steps > 1)
     {
       steps >>= 1;
-
-      // return subdivide(i, j, x, y, steps);
 
       colorMean = Color::black;
       colorMean += subdivide(i, j, x, y, steps);
