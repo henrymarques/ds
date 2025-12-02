@@ -263,11 +263,6 @@ MainWindow::mainMenu()
         1.0f,
         0,
         RayTracer::maxMaxRecursionLevel);
-      ImGui::DragInt("Max Subdivision Level",
-        &_maxSubdivisionLevel,
-        1.0f,
-        0,
-        4);
       ImGui::DragFloat("Min Color Threshold",
         &_minColorThreshold,
         0.01f,
@@ -350,7 +345,6 @@ MainWindow::renderScene()
     else
       _rayTracer->setCamera(*camera);
     _rayTracer->setColorThreshold(_minColorThreshold);
-    _rayTracer->setMaxSubdivisionLevel(_maxSubdivisionLevel);
     _rayTracer->setMaxRecursionLevel(_maxRecursionLevel);
     _rayTracer->setMinWeight(_minWeight);
     _rayTracer->renderImage(*_image);

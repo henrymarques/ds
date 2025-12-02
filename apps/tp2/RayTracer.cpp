@@ -72,8 +72,7 @@ RayTracer::RayTracer(SceneBase& scene, Camera& camera):
   Renderer{scene, camera},
   _maxRecursionLevel{6},
   _minWeight{minMinWeight},
-  _colorThreshold{0.3f},
-  _maxSubdivisionLevel{3u}
+  _colorThreshold{0.3f}
 {
   // do nothing
 }
@@ -140,8 +139,6 @@ RayTracer::renderImage(Image& image)
       _Vh = (_Vw = wh) * h * _Iw;
   }
 
-  _rayCache = new RayCache[_viewport.w * 4];
-
   // init pixel ray
   float F, B;
 
@@ -156,8 +153,7 @@ RayTracer::renderImage(Image& image)
   _pixelRay.tMax = B;
   _pixelRay.set(_camera->position(), -_vrc.n);
   _numberOfRays = _numberOfHits = 0;
-  scan(image);
-  delete[] _rayCache;
+  superScan(image);
 
   auto et = timer.time();
 
@@ -191,17 +187,42 @@ RayTracer::setPixelRay(float x, float y)
 void
 RayTracer::superScan(Image& image)
 {
-  constexpr auto rayAmount{ 4u };
+  const auto length = _maxSteps + 1;
+  buffer = new PixelBuffer[image.width() * length];
 
   ImageBuffer scanLine{ _viewport.w, 1 };
 
-  for (auto j = 0u; j < _viewport.h; j++)
+  for (auto j = 0; j < length; j++)
+  {
+    for (auto i = 0; i < length; i++)
+    {
+      window[j][i].baked = 0;
+    }
+  }
+
+  for (auto j = 0; j < _viewport.h; j++)
   {
     printf("Scanning line %d of %d\r", j + 1, _viewport.h);
-    for (auto i = 0u; i < _viewport.w; i++)
+
+    for (auto i = 0; i < length; i++)
+      window[i][0].baked = 0;
+
+    for (auto i = 0; i < _viewport.w; i++)
     {
-      Color color = subdivide(i + arand(), j + arand(), 0);
+      for (auto k = 0; k < length; k++)
+        if (buffer[(i * (length - 1)) + k].baked)
+          window[0][k] = buffer[(i * (length - 1)) + k];
+
+      Color color = subdivide(i, j, (float)i, (float)j, 0);
       scanLine[i] = color;
+
+      for (auto k = 0; k < length; k++)
+        if (window[length - 1][k].baked)
+          buffer[(i * (length - 1)) + k] = window[length - 1][k];
+
+      for (auto k = 0; k < length; k++)
+        if (window[k][length - 1].baked)
+          window[k][0] = window[k][length - 1];
     }
 
     image.setData(0, j, scanLine);
@@ -225,36 +246,56 @@ RayTracer::scan(Image& image)
 }
 
 Color
-RayTracer::subdivide(unsigned i, unsigned j, unsigned subdivisionLevel)
+RayTracer::subdivide(unsigned i, unsigned j, float x, float y, unsigned steps)
 {
-  constexpr auto rayAmount{ 4u };
-  auto offset = 1.0f / (float)(std::pow(2, subdivisionLevel));
+  // auto steps = 1 << subdivisionLevel;
+  auto offset = 1.0f / steps;
 
-  Color* color = new Color[4];
+  Color color[4];
   Color colorMean = Color::black;
-  for (auto ri = 0u, k = 0u; ri < rayAmount / 2; ri++)
-    for (auto rj = 0u; rj < rayAmount / 2; rj++)
-    {
-      auto pos = (int)(i + (ri * offset) + (rj * offset));
-      color[k] = shoot((float)i + offset * ri, (float)j + offset * rj);
-      colorMean += color[k];
-      k++;
-    }
 
-  colorMean *= (1.0f / 4);
-  for (auto ri = 0u, k = 0u; ri < rayAmount / 2; ri++)
-    for (auto rj = 0u; rj < rayAmount / 2; rj++)
+  for (int w = 0, c = 0; w < 2; w++)
+  {
+    for (int z = 0; z < 2; z++)
     {
-      auto d = math::abs(maxRGB(color[k] - colorMean));
-      if (d > _colorThreshold && subdivisionLevel < _maxSubdivisionLevel)
+      auto buf = window[i + (steps * w)][j + (steps * z)];
+      if (buf.baked)
       {
-        delete[] color;
-        return subdivide(i, j, subdivisionLevel + 1);
+        color[c].r = buf.p.r;
+        color[c].g = buf.p.g;
+        color[c].b = buf.p.b;
       }
-      k++;
-    }
+      else
+      {
+        color[c] = shoot(x + (offset * w), y + (offset * z));
+        buf.baked = 1;
+        buf.p.r = color[c].r;
+        buf.p.g = color[c].g;
+        buf.p.b = color[c].b;
+      }
 
-  delete[] color;
+      c++;
+    }
+  }
+
+  for (int k = 0; k < 4; k++)
+    colorMean += color[k];
+  colorMean *= (1.0f / 4);
+
+  for (auto k = 0; k < 4; k++) {
+    auto d = math::abs(maxRGB(color[k] - colorMean));
+    if (d > _colorThreshold && steps < _maxSteps)
+    {
+      colorMean = Color::black;
+      steps >>= 1;
+
+      colorMean += subdivide(i, j, x, y, steps);
+      colorMean += subdivide(i + steps, j, x, y, steps);
+      colorMean += subdivide(i, j + steps, x, y, steps);
+      colorMean += subdivide(i + steps, j + steps, x, y, steps);
+      colorMean *= (1.0f / 4);
+    }
+  }
 
   return colorMean;
 }

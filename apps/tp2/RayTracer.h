@@ -53,6 +53,8 @@ class RayTracer: public Renderer
 public:
   static constexpr auto minMinWeight = float(0.001);
   static constexpr auto maxMaxRecursionLevel = uint32_t(20);
+  static constexpr uint32_t _maxSubdivisionLevel{2};
+  static constexpr uint32_t _maxSteps{4};
 
   RayTracer(SceneBase&, Camera&);
 
@@ -86,16 +88,6 @@ public:
     _maxRecursionLevel = math::min(rl, maxMaxRecursionLevel);
   }
 
-  auto maxSubdivisionLevel() const
-  {
-    return _maxSubdivisionLevel;
-  }
-
-  void setMaxSubdivisionLevel(uint32_t rl)
-  {
-    _maxSubdivisionLevel = math::min(rl, 4u);
-  }
-
   void update() override;
   void render() override;
   virtual void renderImage(Image&);
@@ -111,7 +103,6 @@ private:
   } _vrc;
   float _minWeight;
   float _colorThreshold;
-  uint32_t _maxSubdivisionLevel;
   uint32_t _maxRecursionLevel;
   uint64_t _numberOfRays;
   uint64_t _numberOfHits;
@@ -121,14 +112,16 @@ private:
   float _Ih;
   float _Iw;
 
-  struct RayCache
+  struct PixelBuffer
   {
-    Color color;
-    bool valid{ false };
+    Pixel p{};
+    uint8_t baked{0};
   };
-  RayCache* _rayCache;
 
-  Color subdivide(unsigned, unsigned, unsigned);
+  PixelBuffer* buffer;
+  PixelBuffer window[_maxSteps + 1][_maxSteps + 1];
+
+  Color subdivide(unsigned, unsigned, float, float, unsigned);
   void superScan(Image&);
   void scan(Image& image);
   void setPixelRay(float x, float y);
