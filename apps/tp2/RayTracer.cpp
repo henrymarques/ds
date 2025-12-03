@@ -262,7 +262,9 @@ RayTracer::subdivide(unsigned i, unsigned j, float x, float y, unsigned steps)
       }
       else
       {
-        color[c] = shoot(x + (offset * w), y + (offset * z));
+        float xr = math::max(math::min((float)x + math::abs(arand()), (float)x + 0.999f), (float)x);
+        float yr = math::max(math::min((float)y + math::abs(arand()), (float)y + 0.999f), (float)y);
+        color[c] = shoot(xr + (offset * w), yr + (offset * z));
         buf.p.set(color[c]);
         buf.baked = 1;
       }
